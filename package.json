@@ -1,0 +1,34 @@
+{
+  "name": "monitor",
+  "description": "monitor",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "npx husky install"
+  },
+  "private": true,
+  "devDependencies": {
+    "@commitlint/cli": "latest",
+    "@commitlint/config-conventional": "latest",
+    "husky": "latest",
+    "lint-staged": "latest",
+    "prettier": "latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/morajlab-aprp/monitor.git"
+  },
+  "author": {
+    "name": "Morteza Jamali",
+    "email": "mortezajamali4241@gmail.com",
+    "url": "https://moraj.ir"
+  },
+  "bugs": {
+    "url": "https://github.com/morajlab-aprp/monitor/issues"
+  },
+  "homepage": "https://github.com/morajlab-aprp/monitor#readme",
+  "lint-staged": {
+    "**/*": "prettier -w -u",
+    "**/*.go": "go fmt"
+  }
+}

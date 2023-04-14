@@ -4,6 +4,7 @@ import (
 	"fmt"
 	// "os"
 	"errors"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,16 +15,26 @@ type NumberT = int
 type StringT = string
 type BoolT = bool
 
-type DumpString struct {
-	ToNumber func(StringT) (NumberT, error)
-	ToBool   func(StringT) (BoolT, error)
+const NumberTName = "int"
+const StringTName = "string"
+const BoolTName = "bool"
+
+type DumpValue string
+type Dump string
+
+func (dv DumpValue) ToNumber() (NumberT, error) {
+	return strconv.Atoi(string(dv))
 }
 
-var dumpstring = DumpString{ToNumber: func(v StringT) (NumberT, error) {
-	return strconv.Atoi(v)
-}, ToBool: func(v StringT) (BoolT, error) {
-	return strconv.ParseBool(v)
-}}
+func (dv DumpValue) ToBool() (BoolT, error) {
+	return strconv.ParseBool(string(dv))
+}
+
+type Services struct {
+	Battery string
+}
+
+var services = Services{Battery: "battery"}
 
 func searchStrByRegex(regex, str string) []string {
 	exp := regexp.MustCompile(regex)
@@ -31,37 +42,28 @@ func searchStrByRegex(regex, str string) []string {
 	return exp.FindAllString(str, -1)
 }
 
-func getValueFromDump(key, dump string) (string, error) {
-	matches := searchStrByRegex(fmt.Sprintf(`(?i)%s:\s*(\w|\d)+`, key), dump)
+func (dump Dump) getValue(key string) (DumpValue, error) {
+	matches := searchStrByRegex(fmt.Sprintf(`(?i)%s:\s*(\w|\d)+`, key), string(dump))
 
 	if len(matches) > 1 {
-		return "", errors.New("More than one match")
+		return DumpValue(""), errors.New("More than one match")
 	}
 
 	if len(matches) < 1 {
-		return "", errors.New("no match")
+		return DumpValue(""), errors.New("no match")
 	}
 
 	tokens := strings.Split(matches[0], ":")
 	value := strings.TrimSpace(tokens[1])
 
-	return value, nil
+	return DumpValue(value), nil
 }
 
-type BatteryStats struct {
-	ac_powered bool
-}
-
-func dumpBattery() (*BatteryStats, error) {
-	var bs BatteryStats
-	// cmd := exec.Command("dumpsys", "battery")
+func dumpSystem(service string) (Dump, error) {
+	// cmd := exec.Command("dumpsys", service)
 	// stdout, err := cmd.Output()
 
-	// if err != nil {
-	//   return "", err
-	// }
-
-	// return string(stdout), nil
+	// return Dump(stdout), err
 
 	// TODO: Remove following line
 	stdout := `Battery stat: Current Battery Service state:
@@ -81,21 +83,77 @@ func dumpBattery() (*BatteryStats, error) {
   technology: Li-ion
 `
 
-	raw_value, err := getValueFromDump(`ac powered`, stdout)
+	return Dump(stdout), nil
+}
 
-	if err == nil {
-		value, err := dumpstring.ToBool(raw_value)
+type DumpField struct {
+	Key   string
+	Type  string
+	Value DumpValue
+}
 
-		if err == nil {
-			bs.ac_powered = value
-		}
+func (field *DumpField) Set(dump Dump) error {
+	dumpvalue, err := dump.getValue(field.Key)
+
+	if err != nil {
+		return err
 	}
 
-	return &bs, nil
+	field.Value = dumpvalue
+
+	return nil
+}
+
+func (field *DumpField) Get() (any, error) {
+	if field.Type == BoolTName {
+		return field.Value.ToBool()
+	}
+
+	if field.Type == StringTName {
+		return field.Value, nil
+	}
+
+	return nil, fmt.Errorf("Type %s is invalid", field.Type)
+}
+
+type BatteryStats struct {
+	Ac_powered DumpField
+	Technology DumpField
+}
+
+// TODO: Complete here
+func (bs BatteryStats) Initialize(dump Dump) error {
+	v := reflect.ValueOf(bs)
+	typeOfbs := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		fmt.Println(v.Field(i).Interface().(DumpField))
+		fmt.Printf("Field: %s\tValue: %v\n", typeOfbs.Field(i).Name, v.Field(i).Interface().(DumpField).Value)
+	}
+
+	return nil
+}
+
+func dumpBattery() (*BatteryStats, error) {
+	bs := &BatteryStats{Ac_powered: DumpField{Key: "ac powered", Type: BoolTName}, Technology: DumpField{Key: "technology", Type: StringTName}}
+	dump, err := dumpSystem(services.Battery)
+
+	if err != nil {
+		return bs, nil
+	}
+
+	err = bs.Initialize(dump)
+
+	if err != nil {
+		return bs, nil
+	}
+
+	return bs, nil
 }
 
 func main() {
 	text, _ := dumpBattery()
 
-	fmt.Printf("All matches : %+v\n", *text)
+	// val, _ := text.Ac_powered.Get()
+	fmt.Printf("All matches : %+v\n", text)
 }

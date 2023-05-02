@@ -2,9 +2,10 @@ from unittest.mock import patch
 from dump import getBatteryDump
 import pprint
 
+
 def Test_getBatteryDump():
-  with patch('dump.subprocess') as mock_subprocess:
-    mock_subprocess.call.return_value = """Battery stat: Current Battery Service state:
+    with patch("dump.subprocess") as mock_subprocess:
+        mock_subprocess.call.return_value = """Battery stat: Current Battery Service state:
   AC powered: true
   USB powered: false
   Wireless powered: false
@@ -20,10 +21,12 @@ def Test_getBatteryDump():
   temperature: 0
   technology: Li-ion
 """
-    pprint.pprint(getBatteryDump())
+        pprint.pprint(getBatteryDump())
+
 
 def main():
-  Test_getBatteryDump()
+    Test_getBatteryDump()
+
 
 if __name__ == "__main__":
-  main()
+    main()

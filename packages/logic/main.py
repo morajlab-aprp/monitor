@@ -1,8 +1,9 @@
 import dump
 
+
 def main():
-  print(dump.getBatteryDump())
+    print(dump.getBatteryDump())
 
 
 if __name__ == "__main__":
-  main()
+    main()

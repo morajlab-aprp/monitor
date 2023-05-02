@@ -29,6 +29,7 @@
   "homepage": "https://github.com/morajlab-aprp/monitor#readme",
   "lint-staged": {
     "**/*": "prettier -w -u",
-    "**/*.go": "go fmt"
+    "**/*.go": "go fmt",
+    "**/*.py": "black"
   }
 }
